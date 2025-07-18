@@ -39,12 +39,9 @@ async def run_cpg_program(input_path: str, output_path: str):
 
 def cleanup_files(*file_paths):
     for file_path in file_paths:
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.info(f"Cleaned up temporary file: {file_path}")
-        except Exception as e:
-            logger.warning(f"Failed to cleanup file {file_path}: {e}")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info(f"Cleaned up temporary file: {file_path}")
 
 
 @app.post("/cpg")
@@ -62,15 +59,10 @@ async def post_cpg(file: UploadFile = File(...), background_tasks: BackgroundTas
 
     output_path = f"{input_path}.json"
 
-    try:
-        await run_cpg_program(input_path, output_path)
+    await run_cpg_program(input_path, output_path)
 
-        if os.path.exists(output_path):
-            background_tasks.add_task(cleanup_files, input_path, output_path)
-            return FileResponse(path=output_path, media_type="application/json")
-        else:
-            raise HTTPException(status_code=500)
-
-    except Exception as e:
-        cleanup_files(input_path, output_path)
-        raise
+    if os.path.exists(output_path):
+        background_tasks.add_task(cleanup_files, input_path, output_path)
+        return FileResponse(path=output_path, media_type="application/json")
+    else:
+        raise HTTPException(status_code=500)
